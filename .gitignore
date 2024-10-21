@@ -1,1 +1,5 @@
 .DS_Store
+.pio
+.vs_code
+.vscode
+secrets.h
