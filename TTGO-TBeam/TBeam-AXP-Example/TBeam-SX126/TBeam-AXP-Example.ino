@@ -38,7 +38,7 @@ DuckDisplay* display = NULL;
 MamaDuck duck;
 
 auto timer = timer_create_default();
-const int INTERVAL_MS = 60000;
+const int INTERVAL_MS = 20000;
 char message[32];
 int counter = 1;
 
@@ -52,8 +52,10 @@ void setup() {
     devId.insert(devId.end(), deviceId.begin(), deviceId.end());
 
     // Use the default setup provided by the SDK
-    duck.setupWithDefaults(devId);
-    Serial.println("MAMA-DUCK...READY!");
+    duck.setDeviceId(deviceId);
+    // initialize the serial component with the hardware supported baudrate
+    duck.setupSerial(115200);
+    duck.setupRadio();
 
     // initialize the timer. The timer thread runs separately from the main loop
     // and will trigger sending a counter message.
@@ -79,8 +81,8 @@ void loop() {
 bool runSensor(void *) {
 
 
-    float isCharging = axp.isCharging();
-    boolean isFullyCharged = axp.isBatChagerDoneIrq();
+    bool isCharging = axp.isCharging();
+    bool isFullyCharged = axp.isBatChargeDoneIrq();
     float batteryVoltage = axp.getBattVoltage();
     float batteryDischarge = axp.getAcinCurrent();
     float getTemp = axp.getTemperature();
