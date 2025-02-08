@@ -21,10 +21,12 @@
 
 // AXP setup
 #include <Wire.h>
-#include <axp20x.h>
+#define XPOWERS_CHIP_AXP192
+#include <XPowersLib.h>
 
-AXP20X_Class axp;
+XPowersPMU axp;
 
+bool runSensor(void *);
 const uint8_t i2c_sda = 21;
 const uint8_t i2c_scl = 22;
 
@@ -33,61 +35,59 @@ DuckDisplay* display = NULL;
 
 
 // Set device ID between ""
-String deviceId = "MAMA001";
 MamaDuck duck;
 
 auto timer = timer_create_default();
-const int INTERVAL_MS = 60000;
-char message[32]; 
+const int INTERVAL_MS = 20000;
+char message[32];
 int counter = 1;
 
 void setup() {
-  // We are using a hardcoded device id here, but it should be retrieved or
-  // given during the device provisioning then converted to a byte vector to
-  // setup the duck NOTE: The Device ID must be exactly 8 bytes otherwise it
-  // will get rejected
-  std::string deviceId("MAMA0001");
-  std::vector<byte> devId;
-  devId.insert(devId.end(), deviceId.begin(), deviceId.end());
+    // We are using a hardcoded device id here, but it should be retrieved or
+    // given during the device provisioning then converted to a byte vector to
+    // setup the duck NOTE: The Device ID must be exactly 8 bytes otherwise it
+    // will get rejected
+    std::string deviceId("MAMA0001");
+    std::vector<byte> devId;
+    devId.insert(devId.end(), deviceId.begin(), deviceId.end());
 
-  // Use the default setup provided by the SDK
-  duck.setupWithDefaults(devId);
-  Serial.println("MAMA-DUCK...READY!");
+    // Use the default setup provided by the SDK
+    duck.setDeviceId(deviceId);
+    // initialize the serial component with the hardware supported baudrate
+    duck.setupSerial(115200);
+    duck.setupRadio();
 
-  // initialize the timer. The timer thread runs separately from the main loop
-  // and will trigger sending a counter message.
-  timer.every(INTERVAL_MS, runSensor);
+    // initialize the timer. The timer thread runs separately from the main loop
+    // and will trigger sending a counter message.
+    timer.every(INTERVAL_MS, runSensor);
 
-   Wire.begin(i2c_sda, i2c_scl);
+    Wire.begin(i2c_sda, i2c_scl);
 
-     int ret = axp.begin(Wire, AXP192_SLAVE_ADDRESS);
+    int ret = axp.begin(Wire, AXP192_SLAVE_ADDRESS,i2c_sda,i2c_scl);
 
-     if (ret == AXP_FAIL) {
-        Serial.println("AXP Power begin failed");
-        while (1);
-     }
+    axp.enableIRQ(XPOWERS_AXP192_BAT_CHG_DONE_IRQ | XPOWERS_AXP192_BAT_CHG_START_IRQ);
 }
 
 void loop() {
-  timer.tick();
-  // Use the default run(). The Mama duck is designed to also forward data it receives
-  // from other ducks, across the network. It has a basic routing mechanism built-in
-  // to prevent messages from hoping endlessly.
-  duck.run();
+    timer.tick();
+    // Use the default run(). The Mama duck is designed to also forward data it receives
+    // from other ducks, across the network. It has a basic routing mechanism built-in
+    // to prevent messages from hoping endlessly.
+    duck.run();
 
 
 }
 
 bool runSensor(void *) {
-  
-  
-float isCharging = axp.isChargeing();
-boolean isFullyCharged = axp.isChargingDoneIRQ();
-float batteryVoltage = axp.getBattVoltage();
-float batteryDischarge = axp.getAcinCurrent();
-float getTemp = axp.getTemp();  
-int battPercentage = axp.getBattPercentage();
-   
+
+
+    bool isCharging = axp.isCharging();
+    bool isFullyCharged = axp.isBatChargeDoneIrq();
+    float batteryVoltage = axp.getBattVoltage();
+    float batteryDischarge = axp.getAcinCurrent();
+    float getTemp = axp.getTemperature();
+    int battPercentage = axp.getBatteryPercent();
+
     Serial.println("--- T-BEAM Power Information ---");
     Serial.print("Duck charging (1 = Yes): ");
     Serial.println(isCharging);
@@ -96,24 +96,24 @@ int battPercentage = axp.getBattPercentage();
     Serial.print("Battery Voltage: ");
     Serial.println(batteryVoltage);
     Serial.print("Battery Discharge: ");
-    Serial.println(batteryDischarge);  
+    Serial.println(batteryDischarge);
     Serial.print("Board Temperature: ");
     Serial.println(getTemp);
     Serial.print("battery Percentage: ");
     Serial.println(battPercentage);
-   
 
-  String sensorVal = 
-  "Charging: " + 
-  String(isCharging) ; 
-  " BattFull: " +
-  String(isFullyCharged)+
-  " Voltage " +
-  String(batteryVoltage) ;
-  " Temp: " +
-  String(getTemp);
 
-  
-  duck.sendData(topics::sensor, sensorVal);
-  return true;
+    std::string sensorVal =
+            "Charging: ";
+    sensorVal.append(isCharging ? "Yes" : "No")
+            .append(" BattFull: ")
+            .append(isFullyCharged ? "Yes" : "No")
+            .append(" Voltage: ")
+            .append(std::to_string(batteryVoltage))
+            .append(" Temp: ")
+            .append(std::to_string(getTemp));
+
+
+    duck.sendData(topics::sensor, sensorVal);
+    return true;
 }
