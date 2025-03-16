@@ -12,6 +12,7 @@
 #include <string>
 #include "arduino-timer.h"
 #include <MamaDuck.h>
+#include <vector>
 
 #ifdef SERIAL_PORT_USBVIRTUAL
 #define Serial SERIAL_PORT_USBVIRTUAL
@@ -39,9 +40,9 @@ void setup() {
   // given during the device provisioning then converted to a byte vector to
   // setup the duck NOTE: The Device ID must be exactly 8 bytes otherwise it
   // will get rejected
-  std::string deviceId("MAMAGPS1");
-  std::vector<byte> devId;
-  devId.insert(devId.end(), deviceId.begin(), deviceId.end());
+  std::string deviceId("MAMA0001");
+  std::array<byte,8> devId;
+  std::copy(deviceId.begin(), deviceId.end(), devId.begin());
 
   // Use the default setup provided by the SDK
   duck.setupWithDefaults(devId);
@@ -124,6 +125,18 @@ String getGPSData() {
   return sensorVal;
 }
 
+// Converting String to byte vector
+std::vector<byte> stringToByteVector(const String& str) {
+    std::vector<byte> byteVec;
+    byteVec.reserve(str.length());
+
+    for (unsigned int i = 0; i < str.length(); ++i) {
+        byteVec.push_back(static_cast<byte>(str[i]));
+    }
+
+    return byteVec;
+}
+
 bool runSensor(void *) {
   bool result;
   String sensorVal = getGPSData();
@@ -132,6 +145,7 @@ bool runSensor(void *) {
   Serial.println(sensorVal);
 
   //Send gps data
-  duck.sendData(topics::location, sensorVal);
+  std::vector<byte> message = stringToByteVector(sensorVal);
+  duck.sendData(topics::location, message);
   return true;
 }
