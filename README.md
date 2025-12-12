@@ -1,6 +1,9 @@
-# Example Firmware Using the ClusterDuck Protocol
+# QuackPacks
+QuackPacks are powerful modular add-ons that snap right onto Ducks to expand what the ClusterDuck Protocol can do. Think of them as plug-and-play upgrades: sensor integrations, new hardware boards, network isolation features, fresh captive portal designs. If it extends CDP, it can be a QuackPack.
 
-These are few examples to show how someone can build on top of the ClusterDuck Protocol. It works using the master branch of the ClusterDuck Protocol firmware. 
+Our goal is to grow a rich, community-driven library of these packs so developers can move faster, build smarter, and stand on the shoulders of Ducks. Whether you're customizing deployments or inventing entirely new capabilities, QuackPacks give you the freedom to innovate without wrestling with the basics.
+
+Build boldly. Share widely. And let your Ducks do a whole lot more.
 
 ## Sensors
 These sensors are tested and confirmed that it works by CDP.
